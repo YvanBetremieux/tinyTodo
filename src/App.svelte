@@ -3,12 +3,14 @@
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import PeekWindow from "./lib/components/PeekWindow.svelte";
+  import { loadTasks } from "./lib/stores/taskStore";
 
   let visible = $state(false);
 
   onMount(() => {
     const unlistenShow = listen("show-peek", () => {
       visible = true;
+      loadTasks();
     });
 
     const unlistenHide = listen("hide-peek", () => {

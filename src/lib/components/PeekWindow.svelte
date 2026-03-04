@@ -1,16 +1,15 @@
 <script lang="ts">
   import { tasks } from "../stores/taskStore";
-
-  const emptyMessage = "Rien à faire — profite.";
+  import TaskRow from "./TaskRow.svelte";
 </script>
 
 <div class="peek-window">
   {#if $tasks.length === 0}
-    <p class="empty-state">{emptyMessage}</p>
+    <p class="empty-state">Rien à faire — profite.</p>
   {:else}
     <ul class="task-list">
       {#each $tasks as task (task.id)}
-        <li class="task-row">{task.text}</li>
+        <TaskRow {task} />
       {/each}
     </ul>
   {/if}
@@ -37,11 +36,5 @@
     list-style: none;
     overflow-y: auto;
     flex: 1;
-  }
-
-  .task-row {
-    padding: var(--space-sm) var(--space-md);
-    border-bottom: 1px solid var(--color-border);
-    color: var(--color-text-primary);
   }
 </style>
