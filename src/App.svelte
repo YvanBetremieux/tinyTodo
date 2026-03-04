@@ -31,8 +31,16 @@
   });
 </script>
 
-<main>
-  {#if visible}
-    <PeekWindow />
-  {/if}
+<main class:hidden={!visible}>
+  <PeekWindow />
 </main>
+
+<style>
+  main {
+    height: 100%;
+  }
+
+  main.hidden {
+    visibility: hidden;
+  }
+</style>

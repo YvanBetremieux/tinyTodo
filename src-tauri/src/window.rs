@@ -9,11 +9,13 @@ pub fn show_peek(app: &AppHandle) {
     }
 }
 
-/// Hide the peek window
+/// Hide the peek window (only if currently visible)
 pub fn hide_peek(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.hide();
-        let _ = app.emit("hide-peek", ());
+    if is_visible(app) {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.hide();
+            let _ = app.emit("hide-peek", ());
+        }
     }
 }
 
