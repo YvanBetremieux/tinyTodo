@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tinyTodo — Design Directions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a0a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #222;
+    padding: 12px 24px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .nav-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-right: 16px;
+  }
+  .nav button {
+    padding: 6px 14px;
+    border: 1px solid #333;
+    background: transparent;
+    color: #94a3b8;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .nav button:hover { border-color: #4ade80; color: #e2e8f0; }
+  .nav button.active { background: #4ade80; color: #0f172a; border-color: #4ade80; font-weight: 600; }
+
+  /* Section */
+  .section {
+    display: none;
+    padding: 80px 24px 40px;
+    min-height: 100vh;
+  }
+  .section.active { display: block; }
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .section-desc {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 32px;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  /* Mockup container */
+  .mockup-stage {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+  }
+
+  /* Shared peek window styles */
+  .peek {
+    position: relative;
+    width: 400px;
+  }
+
+  /* Task items */
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .task-item:hover { background: rgba(255,255,255,0.04); }
+
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #475569;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .task-item:hover .checkbox { border-color: #4ade80; }
+  .task-item.checked .checkbox {
+    background: #4ade80;
+    border-color: #4ade80;
+  }
+  .task-item.checked .checkbox::after {
+    content: '✓';
+    position: absolute;
+    top: -1px;
+    left: 2px;
+    font-size: 12px;
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .task-item.checked .task-text {
+    text-decoration: line-through;
+    opacity: 0.4;
+  }
+
+  .task-text {
+    font-size: 14px;
+    color: #e2e8f0;
+    flex: 1;
+  }
+
+  .drag-handle {
+    color: #334155;
+    font-size: 12px;
+    cursor: grab;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .task-item:hover .drag-handle { opacity: 1; }
+
+  /* Input field */
+  .input-field {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    padding: 0;
+  }
+  .input-field::placeholder { color: #475569; }
+
+  /* ===== DIRECTION 1: Ultra-Minimal ===== */
+  .d1 .peek {
+    background: #1e293b;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .d1 .task-list { padding: 8px 0; }
+  .d1 .task-item { padding: 8px 16px; }
+  .d1 .input-row {
+    padding: 12px 16px;
+    border-top: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .d1 .input-icon { color: #475569; font-size: 16px; }
+
+  /* ===== DIRECTION 2: Floating Card ===== */
+  .d2 .peek {
+    background: #1a1a2e;
+    border-radius: 16px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+  }
+  .d2 .peek-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .d2 .peek-header .count {
+    font-size: 12px;
+    color: #64748b;
+  }
+  .d2 .peek-header .history-btn {
+    font-size: 12px;
+    color: #64748b;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .d2 .peek-header .history-btn:hover { color: #94a3b8; background: rgba(255,255,255,0.05); }
+  .d2 .task-list { padding: 0 0 8px; }
+  .d2 .task-item { padding: 10px 16px; }
+  .d2 .checkbox { border-radius: 50%; }
+  .d2 .input-row {
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.02);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .d2 .plus-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: rgba(74, 222, 128, 0.1);
+    border: none;
+    color: #4ade80;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .d2 .plus-btn:hover { background: rgba(74, 222, 128, 0.2); }
+
+  /* ===== DIRECTION 3: Glassmorphism ===== */
+  .d3 .mockup-stage { background: linear-gradient(135deg, #1a1a2e 0%, #0f172a 50%, #1e1b4b 100%); border-radius: 12px; min-height: 500px; }
+  .d3 .peek {
+    background: rgba(30, 41, 59, 0.75);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+  }
+  .d3 .task-list { padding: 12px 0; }
+  .d3 .task-item { padding: 10px 20px; }
+  .d3 .checkbox {
+    border-color: rgba(255,255,255,0.2);
+    border-radius: 6px;
+  }
+  .d3 .task-item:hover .checkbox { border-color: #4ade80; }
+  .d3 .input-row {
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .d3 .input-icon { color: rgba(255,255,255,0.25); font-size: 14px; }
+
+  /* ===== DIRECTION 4: Compact Dense ===== */
+  .d4 .peek {
+    background: #111827;
+    border-radius: 8px;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    border: 1px solid #1f2937;
+    overflow: hidden;
+    width: 360px;
+  }
+  .d4 .task-list { padding: 4px 0; }
+  .d4 .task-item { padding: 5px 12px; gap: 8px; }
+  .d4 .checkbox {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border-width: 1.5px;
+  }
+  .d4 .task-text { font-size: 13px; }
+  .d4 .input-row {
+    padding: 8px 12px;
+    border-top: 1px solid #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .d4 .input-field { font-size: 13px; }
+  .d4 .kbd {
+    font-size: 10px;
+    color: #475569;
+    background: #1f2937;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+  }
+
+  /* ===== DIRECTION 5: macOS Native Feel ===== */
+  .d5 .peek {
+    background: #2a2a2e;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255,255,255,0.1);
+    overflow: hidden;
+    width: 420px;
+  }
+  .d5 .peek-titlebar {
+    height: 28px;
+    background: #38383c;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+    -webkit-app-region: drag;
+  }
+  .d5 .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .d5 .dot-close { background: #ff5f57; }
+  .d5 .dot-min { background: #febc2e; }
+  .d5 .dot-max { background: #28c840; }
+  .d5 .task-list { padding: 8px 0; }
+  .d5 .task-item { padding: 8px 16px; }
+  .d5 .checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border-color: #636366;
+  }
+  .d5 .task-text { font-size: 13px; }
+  .d5 .input-row {
+    padding: 10px 16px;
+    background: #232326;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .d5 .input-field { font-size: 13px; }
+
+  /* ===== DIRECTION 6: High Contrast Accessible ===== */
+  .d6 .peek {
+    background: #000000;
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px #e2e8f0, 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .d6 .task-list { padding: 8px 0; }
+  .d6 .task-item { padding: 10px 16px; }
+  .d6 .task-item:hover { background: #1a1a1a; }
+  .d6 .checkbox {
+    border-color: #ffffff;
+    border-width: 2px;
+    border-radius: 3px;
+  }
+  .d6 .task-item:hover .checkbox { border-color: #4ade80; }
+  .d6 .task-text { color: #ffffff; font-size: 15px; }
+  .d6 .input-row {
+    padding: 12px 16px;
+    border-top: 2px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .d6 .input-field { color: #ffffff; font-size: 15px; }
+  .d6 .focus-indicator {
+    width: 3px;
+    height: 20px;
+    background: #4ade80;
+    border-radius: 2px;
+    margin-right: 4px;
+  }
+
+  /* ===== DIRECTION 7: Warm Minimal ===== */
+  .d7 .peek {
+    background: #1c1917;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .d7 .task-list { padding: 8px 0; }
+  .d7 .task-item { padding: 9px 16px; }
+  .d7 .task-item:hover { background: rgba(255, 255, 255, 0.03); }
+  .d7 .checkbox {
+    border-color: #57534e;
+    border-radius: 4px;
+  }
+  .d7 .task-item:hover .checkbox { border-color: #fbbf24; }
+  .d7 .task-item.checked .checkbox { background: #fbbf24; border-color: #fbbf24; }
+  .d7 .task-text { color: #e7e5e4; }
+  .d7 .input-row {
+    padding: 12px 16px;
+    border-top: 1px solid #292524;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .d7 .input-icon { color: #78716c; }
+
+  /* ===== DIRECTION 8: Spotlight Pure ===== */
+  .d8 .mockup-stage {
+    background: rgba(0,0,0,0.6);
+    border-radius: 12px;
+    min-height: 500px;
+    backdrop-filter: blur(5px);
+  }
+  .d8 .peek {
+    background: #1e293b;
+    border-radius: 12px;
+    box-shadow: 0 0 80px -20px rgba(74, 222, 128, 0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .d8 .search-bar {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #334155;
+  }
+  .d8 .search-icon { color: #4ade80; font-size: 16px; }
+  .d8 .input-field { font-size: 16px; }
+  .d8 .task-list { padding: 4px 0; max-height: 300px; overflow-y: auto; }
+  .d8 .task-item { padding: 10px 16px; }
+  .d8 .task-item.selected { background: rgba(74, 222, 128, 0.08); }
+  .d8 .checkbox { display: none; }
+  .d8 .task-bullet {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #475569;
+    flex-shrink: 0;
+  }
+  .d8 .task-item.selected .task-bullet { background: #4ade80; }
+  .d8 .task-item { gap: 12px; }
+  .d8 .shortcut-hint {
+    padding: 8px 16px;
+    border-top: 1px solid #334155;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+  }
+  .d8 .hint {
+    font-size: 11px;
+    color: #475569;
+  }
+  .d8 .hint kbd {
+    background: #334155;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 10px;
+    margin-right: 4px;
+  }
+
+  /* Fade animation demo */
+  .fade-demo .task-item.fading {
+    animation: fadeOut 0.3s ease-out forwards;
+  }
+  @keyframes fadeOut {
+    0% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(20px); height: 0; padding: 0 16px; margin: 0; overflow: hidden; }
+  }
+
+  /* Compare mode */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    padding: 20px;
+  }
+  .compare-grid .mockup-stage { min-height: auto; padding: 30px 0; }
+  .compare-label {
+    text-align: center;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span class="nav-title">tinyTodo Directions</span>
+  <button class="active" onclick="show('d1')">1. Ultra-Minimal</button>
+  <button onclick="show('d2')">2. Floating Card</button>
+  <button onclick="show('d3')">3. Glass</button>
+  <button onclick="show('d4')">4. Compact</button>
+  <button onclick="show('d5')">5. macOS Native</button>
+  <button onclick="show('d6')">6. High Contrast</button>
+  <button onclick="show('d7')">7. Warm</button>
+  <button onclick="show('d8')">8. Spotlight Pure</button>
+  <button onclick="show('compare')">Compare</button>
+</div>
+
+<!-- Direction 1: Ultra-Minimal -->
+<div id="d1" class="section d1 active fade-demo">
+  <h2 class="section-title">Direction 1 — Ultra-Minimal</h2>
+  <p class="section-desc">L'approche la plus dépouillée. Aucun chrome, aucune décoration. La fenêtre est un rectangle avec des tâches dedans. La beauté vient de l'absence.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="task-list">
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug d'authentification</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre à l'email de Sophie</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Préparer la démo vendredi</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Mettre à jour les dépendances npm</span><span class="drag-handle">⠿</span></div>
+      </div>
+      <div class="input-row">
+        <span class="input-icon">+</span>
+        <input class="input-field" placeholder="Nouvelle tâche..." readonly>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 2: Floating Card -->
+<div id="d2" class="section d2 fade-demo">
+  <h2 class="section-title">Direction 2 — Floating Card</h2>
+  <p class="section-desc">Carte flottante avec un header discret montrant le compteur et un accès à l'historique. Checkbox rondes pour une touche plus douce. Bouton "+" coloré.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="peek-header">
+        <span class="count">5 tâches</span>
+        <button class="history-btn">Historique ↗</button>
+      </div>
+      <div class="task-list">
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug d'authentification</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre à l'email de Sophie</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Préparer la démo vendredi</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Mettre à jour les dépendances npm</span><span class="drag-handle">⠿</span></div>
+      </div>
+      <div class="input-row">
+        <button class="plus-btn">+</button>
+        <input class="input-field" placeholder="Ajouter une tâche..." readonly>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 3: Glassmorphism -->
+<div id="d3" class="section d3 fade-demo">
+  <h2 class="section-title">Direction 3 — Glass</h2>
+  <p class="section-desc">Effet de verre dépoli (glassmorphism). La fenêtre semble flotter au-dessus du bureau avec transparence. Plus décoratif, mais toujours sobre.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="task-list">
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug d'authentification</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre à l'email de Sophie</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Préparer la démo vendredi</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Mettre à jour les dépendances npm</span><span class="drag-handle">⠿</span></div>
+      </div>
+      <div class="input-row">
+        <span class="input-icon">+</span>
+        <input class="input-field" placeholder="Nouvelle tâche..." readonly>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 4: Compact Dense -->
+<div id="d4" class="section d4 fade-demo">
+  <h2 class="section-title">Direction 4 — Compact</h2>
+  <p class="section-desc">Maximum d'information dans minimum d'espace. Pour ceux qui veulent voir 20+ tâches sans scroller. Checkboxes et texte plus petits, espacement réduit. Indicateurs clavier visibles.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="task-list">
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug d'authentification</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre à l'email de Sophie</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Préparer la démo vendredi</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Mettre à jour les dépendances npm</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Envoyer le devis au client</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Revoir la PR de Léa</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Commander des cartouches</span><span class="drag-handle">⠿</span></div>
+      </div>
+      <div class="input-row">
+        <span class="kbd">Space</span>
+        <input class="input-field" placeholder="Nouvelle tâche..." readonly>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 5: macOS Native Feel -->
+<div id="d5" class="section d5 fade-demo">
+  <h2 class="section-title">Direction 5 — macOS Native</h2>
+  <p class="section-desc">Imitation du look natif macOS avec barre de titre, feux tricolores. Familier pour les utilisateurs Mac, mais moins cross-platform et ajoute du chrome.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="peek-titlebar">
+        <div class="dot dot-close"></div>
+        <div class="dot dot-min"></div>
+        <div class="dot dot-max"></div>
+      </div>
+      <div class="task-list">
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug d'authentification</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre à l'email de Sophie</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Préparer la démo vendredi</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Mettre à jour les dépendances npm</span><span class="drag-handle">⠿</span></div>
+      </div>
+      <div class="input-row">
+        <input class="input-field" placeholder="+ Nouvelle tâche..." readonly>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 6: High Contrast Accessible -->
+<div id="d6" class="section d6 fade-demo">
+  <h2 class="section-title">Direction 6 — High Contrast</h2>
+  <p class="section-desc">Contraste maximal pour l'accessibilité. Fond noir pur, texte blanc, bordures visibles. Indicateur de focus vert. Conforme AAA WCAG.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="task-list">
+        <div class="task-item" onclick="fadeTask(this)"><div class="focus-indicator"></div><div class="checkbox"></div><span class="task-text">Fixer le bug d'authentification</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text" style="margin-left: 7px">Appeler la banque</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text" style="margin-left: 7px">Répondre à l'email de Sophie</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text" style="margin-left: 7px">Préparer la démo vendredi</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text" style="margin-left: 7px">Mettre à jour les dépendances npm</span></div>
+      </div>
+      <div class="input-row">
+        <input class="input-field" placeholder="+ Ajouter une tâche..." readonly style="color: #fff">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 7: Warm Minimal -->
+<div id="d7" class="section d7 fade-demo">
+  <h2 class="section-title">Direction 7 — Warm</h2>
+  <p class="section-desc">Tonalités chaudes (brun foncé au lieu de bleu-gris) avec accent jaune/ambre. Plus chaleureux et moins "tech". Même structure ultra-minimale.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="task-list">
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug d'authentification</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre à l'email de Sophie</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Préparer la démo vendredi</span><span class="drag-handle">⠿</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Mettre à jour les dépendances npm</span><span class="drag-handle">⠿</span></div>
+      </div>
+      <div class="input-row">
+        <span class="input-icon">+</span>
+        <input class="input-field" placeholder="Nouvelle tâche..." readonly>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 8: Spotlight Pure -->
+<div id="d8" class="section d8 fade-demo">
+  <h2 class="section-title">Direction 8 — Spotlight Pure</h2>
+  <p class="section-desc">Reprend directement le pattern Spotlight/Raycast. Barre de saisie en haut (comme une barre de recherche), liste en dessous. Pas de checkbox — des bullets. Raccourcis clavier affichés.</p>
+  <div class="mockup-stage">
+    <div class="peek">
+      <div class="search-bar">
+        <span class="search-icon">◉</span>
+        <input class="input-field" placeholder="Ajouter ou rechercher..." readonly>
+      </div>
+      <div class="task-list">
+        <div class="task-item selected" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Fixer le bug d'authentification</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Appeler la banque</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Répondre à l'email de Sophie</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Préparer la démo vendredi</span></div>
+        <div class="task-item" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Mettre à jour les dépendances npm</span></div>
+      </div>
+      <div class="shortcut-hint">
+        <span class="hint"><kbd>↑↓</kbd> naviguer</span>
+        <span class="hint"><kbd>⏎</kbd> cocher</span>
+        <span class="hint"><kbd>⎵</kbd> ajouter</span>
+        <span class="hint"><kbd>⎋</kbd> fermer</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Compare -->
+<div id="compare" class="section">
+  <h2 class="section-title">Comparaison côte à côte</h2>
+  <p class="section-desc">Compare les directions les plus contrastées pour mieux choisir.</p>
+  <div class="compare-grid">
+    <div>
+      <div class="compare-label">1. Ultra-Minimal</div>
+      <div class="d1 fade-demo">
+        <div class="mockup-stage">
+          <div class="peek">
+            <div class="task-list">
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug auth</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre email Sophie</span></div>
+            </div>
+            <div class="input-row"><span class="input-icon">+</span><input class="input-field" placeholder="Nouvelle tâche..." readonly></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-label">8. Spotlight Pure</div>
+      <div class="d8 fade-demo">
+        <div class="mockup-stage">
+          <div class="peek">
+            <div class="search-bar"><span class="search-icon">◉</span><input class="input-field" placeholder="Ajouter ou rechercher..." readonly></div>
+            <div class="task-list">
+              <div class="task-item selected" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Fixer le bug auth</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Appeler la banque</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="task-bullet"></div><span class="task-text">Répondre email Sophie</span></div>
+            </div>
+            <div class="shortcut-hint"><span class="hint"><kbd>⏎</kbd> cocher</span><span class="hint"><kbd>⎋</kbd> fermer</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-label">2. Floating Card</div>
+      <div class="d2 fade-demo">
+        <div class="mockup-stage">
+          <div class="peek">
+            <div class="peek-header"><span class="count">3 tâches</span><button class="history-btn">Historique ↗</button></div>
+            <div class="task-list">
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug auth</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre email Sophie</span></div>
+            </div>
+            <div class="input-row"><button class="plus-btn">+</button><input class="input-field" placeholder="Ajouter..." readonly></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-label">4. Compact</div>
+      <div class="d4 fade-demo">
+        <div class="mockup-stage">
+          <div class="peek">
+            <div class="task-list">
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Fixer le bug auth</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Appeler la banque</span></div>
+              <div class="task-item" onclick="fadeTask(this)"><div class="checkbox"></div><span class="task-text">Répondre email Sophie</span></div>
+            </div>
+            <div class="input-row"><span class="kbd">Space</span><input class="input-field" placeholder="Nouvelle tâche..." readonly></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function fadeTask(el) {
+  el.classList.add('fading');
+  setTimeout(() => {
+    el.style.display = 'none';
+    // Reset after 2s
+    setTimeout(() => {
+      el.classList.remove('fading');
+      el.style.display = '';
+    }, 2000);
+  }, 300);
+}
+</script>
+
+</body>
+</html>
