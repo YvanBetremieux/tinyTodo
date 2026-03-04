@@ -1,0 +1,15 @@
+/* Ultra-minimal theme (default) — dark, clean, no decorations */
+:root[data-theme="ultra-minimal"] {
+  --color-bg: #1a1a2e;
+  --color-surface: #16213e;
+  --color-surface-hover: #1a2744;
+  --color-text-primary: #e8e8e8;
+  --color-text-secondary: #a0a0b0;
+  --color-text-muted: #6b6b80;
+  --color-accent: #7c83ff;
+  --color-accent-hover: #6b72ee;
+  --color-border: #2a2a4a;
+  --color-checkbox: #7c83ff;
+  --color-checkbox-checked: #5a5f99;
+  --color-selection: rgba(124, 131, 255, 0.15);
+}
