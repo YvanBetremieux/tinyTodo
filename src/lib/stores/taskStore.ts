@@ -10,3 +10,9 @@ export async function loadTasks(): Promise<void> {
   const result = await invoke<Task[]>("get_tasks");
   tasks.set(result);
 }
+
+/** Create a new task and reload the list */
+export async function createTask(text: string): Promise<void> {
+  await invoke<Task>("create_task", { text });
+  await loadTasks();
+}

@@ -42,7 +42,9 @@ pub fn run() {
             if let Some(win) = app.get_webview_window("main") {
                 win.on_window_event(move |event| {
                     if let tauri::WindowEvent::Focused(false) = event {
-                        window::hide_peek(&app_handle);
+                        if !window::is_persistent() {
+                            window::hide_peek(&app_handle);
+                        }
                     }
                 });
             }
@@ -53,6 +55,7 @@ pub fn run() {
             tasks::get_tasks,
             tasks::create_task,
             window::hide_peek_command,
+            window::set_persistent,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
