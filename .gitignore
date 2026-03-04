@@ -26,3 +26,7 @@ src-tauri/icons/icon.ico.bak
 
 # Claude Code
 .claude/
+
+# BMAD
+_bmad/
+_bmad-output/
