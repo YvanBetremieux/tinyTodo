@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 /// A single task in the todo list
@@ -34,7 +34,7 @@ pub struct TaskState {
 }
 
 /// Load tasks from JSON file, creating it if absent
-pub fn load_tasks(path: &PathBuf) -> TasksFile {
+pub fn load_tasks(path: &Path) -> TasksFile {
     if let Some(parent) = path.parent() {
         if !parent.exists() {
             let _ = fs::create_dir_all(parent);
@@ -52,7 +52,7 @@ pub fn load_tasks(path: &PathBuf) -> TasksFile {
 }
 
 /// Save tasks to JSON file using atomic write (temp + rename)
-pub fn save_tasks(path: &PathBuf, tasks_file: &TasksFile) -> Result<(), String> {
+pub fn save_tasks(path: &Path, tasks_file: &TasksFile) -> Result<(), String> {
     let json = serde_json::to_string_pretty(tasks_file)
         .map_err(|e| format!("Serialization error: {}", e))?;
 
