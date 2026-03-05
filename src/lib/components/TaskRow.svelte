@@ -5,13 +5,15 @@
 
   interface Props {
     task: Task;
+    selected?: boolean;
   }
 
-  let { task }: Props = $props();
+  let { task, selected = false }: Props = $props();
   let fadingOut = $state(false);
   let editing = $state(false);
   let editText = $state("");
   let editInputEl: HTMLInputElement | undefined = $state();
+  let rowEl: HTMLLIElement | undefined = $state();
 
   async function handleToggle() {
     fadingOut = true;
@@ -61,9 +63,21 @@
       editInputEl.select();
     }
   });
+
+  // Scroll into view when selected
+  $effect(() => {
+    if (selected && rowEl) {
+      rowEl.scrollIntoView({ block: "nearest" });
+    }
+  });
 </script>
 
-<li class="task-row" class:fade-out={fadingOut}>
+<li
+  bind:this={rowEl}
+  class="task-row"
+  class:fade-out={fadingOut}
+  class:selected
+>
   <input
     type="checkbox"
     class="task-checkbox"
@@ -96,6 +110,12 @@
 
   .task-row:hover {
     background-color: var(--color-surface-hover);
+  }
+
+  .task-row.selected {
+    background-color: var(--color-surface-selected, rgba(255, 255, 255, 0.08));
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   .task-row.fade-out {
