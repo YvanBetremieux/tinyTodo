@@ -23,7 +23,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 window::show_peek(app_handle);
             }
             "settings" => {
-                // Emit event to frontend to show settings view
+                window::show_peek(app_handle);
                 let _ = app_handle.emit("show-settings", ());
             }
             "quit" => {

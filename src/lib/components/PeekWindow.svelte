@@ -82,6 +82,8 @@
       const currentTasks = [...$tasks];
       const [moved] = currentTasks.splice(dragFromIndex, 1);
       currentTasks.splice(toIndex, 0, moved);
+      // Optimistic update: re-render immediately before IPC roundtrip
+      tasks.set(currentTasks);
       const newOrder = currentTasks.map(t => t.id);
       await reorderTasks(newOrder);
     }
