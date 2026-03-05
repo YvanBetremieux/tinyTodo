@@ -4,8 +4,10 @@
   import { toggleTask, reorderTasks } from "../stores/taskStore";
   import TaskRow from "./TaskRow.svelte";
   import TaskInput from "./TaskInput.svelte";
+  import HistoryView from "./HistoryView.svelte";
 
   let inputMode = $state(false);
+  let historyMode = $state(false);
   let selectedIndex = $state(-1);
   let dragFromIndex = $state(-1);
   let dragOverIndex = $state(-1);
@@ -21,7 +23,18 @@
     invoke("set_persistent", { persistent: false });
   }
 
+  function toggleHistoryMode() {
+    historyMode = !historyMode;
+    selectedIndex = -1;
+  }
+
+  function closeHistory() {
+    historyMode = false;
+  }
+
   function handleKeydown(e: KeyboardEvent) {
+    if (historyMode) return; // HistoryView handles its own Escape
+
     const isInputFocused = document.activeElement?.tagName === "INPUT";
 
     if (e.key === " " && !inputMode && !isInputFocused) {
@@ -66,7 +79,6 @@
 
   async function handleDrop(toIndex: number) {
     if (dragFromIndex >= 0 && dragFromIndex !== toIndex) {
-      // Build new order by moving the dragged item
       const currentTasks = [...$tasks];
       const [moved] = currentTasks.splice(dragFromIndex, 1);
       currentTasks.splice(toIndex, 0, moved);
@@ -94,31 +106,36 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="peek-window">
-  <div class="peek-header">
-    <button class="add-button" onclick={activateInputMode} title="Nouvelle tâche">+</button>
-  </div>
-
-  {#if inputMode}
-    <TaskInput onclose={deactivateInputMode} />
-  {/if}
-
-  {#if $tasks.length === 0 && !inputMode}
-    <p class="empty-state">Rien à faire — profite.</p>
+  {#if historyMode}
+    <HistoryView onclose={closeHistory} />
   {:else}
-    <ul class="task-list">
-      {#each $tasks as task, i (task.id)}
-        <TaskRow
-          {task}
-          selected={i === selectedIndex}
-          dragging={i === dragFromIndex}
-          dragOver={i === dragOverIndex && i !== dragFromIndex}
-          ondragstart={() => handleDragStart(i)}
-          ondragover={() => handleDragOver(i)}
-          ondrop={() => handleDrop(i)}
-          ondragend={handleDragEnd}
-        />
-      {/each}
-    </ul>
+    <div class="peek-header">
+      <button class="header-button" onclick={toggleHistoryMode} title="Historique">⏱</button>
+      <button class="header-button add-button" onclick={activateInputMode} title="Nouvelle tâche">+</button>
+    </div>
+
+    {#if inputMode}
+      <TaskInput onclose={deactivateInputMode} />
+    {/if}
+
+    {#if $tasks.length === 0 && !inputMode}
+      <p class="empty-state">Rien à faire — profite.</p>
+    {:else}
+      <ul class="task-list">
+        {#each $tasks as task, i (task.id)}
+          <TaskRow
+            {task}
+            selected={i === selectedIndex}
+            dragging={i === dragFromIndex}
+            dragOver={i === dragOverIndex && i !== dragFromIndex}
+            ondragstart={() => handleDragStart(i)}
+            ondragover={() => handleDragOver(i)}
+            ondrop={() => handleDrop(i)}
+            ondragend={handleDragEnd}
+          />
+        {/each}
+      </ul>
+    {/if}
   {/if}
 </div>
 
@@ -132,10 +149,11 @@
   .peek-header {
     display: flex;
     justify-content: flex-end;
+    gap: var(--space-xs);
     padding: var(--space-xs) var(--space-md);
   }
 
-  .add-button {
+  .header-button {
     background: transparent;
     border: none;
     color: var(--color-text-secondary);
@@ -147,7 +165,7 @@
     line-height: 1;
   }
 
-  .add-button:hover {
+  .header-button:hover {
     color: var(--color-accent);
     background-color: var(--color-surface-hover);
   }

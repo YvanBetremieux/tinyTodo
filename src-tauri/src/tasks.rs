@@ -89,6 +89,25 @@ pub fn get_tasks(state: tauri::State<'_, TaskState>) -> Vec<Task> {
     active
 }
 
+/// IPC command: get completed tasks (done=true), sorted by completed_at DESC
+#[tauri::command]
+pub fn get_history(state: tauri::State<'_, TaskState>) -> Vec<Task> {
+    let tasks_file = state.tasks.lock().unwrap();
+    let mut done: Vec<Task> = tasks_file
+        .tasks
+        .iter()
+        .filter(|t| t.done)
+        .cloned()
+        .collect();
+    // Sort by completed_at DESC (most recent first)
+    done.sort_by(|a, b| {
+        let a_time = a.completed_at.as_deref().unwrap_or("");
+        let b_time = b.completed_at.as_deref().unwrap_or("");
+        b_time.cmp(a_time)
+    });
+    done
+}
+
 /// IPC command: create a new task
 #[tauri::command]
 pub fn create_task(text: String, state: tauri::State<'_, TaskState>) -> Result<Task, String> {
@@ -751,5 +770,84 @@ mod tests {
         // Try to find a nonexistent task
         let result = tasks_file.tasks.iter().find(|t| t.id == "nonexistent");
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_history_returns_only_done_tasks() {
+        let tasks_file = TasksFile {
+            tasks: vec![
+                Task {
+                    id: "active".to_string(),
+                    text: "Active task".to_string(),
+                    done: false,
+                    created_at: "2026-03-04T14:00:00Z".to_string(),
+                    completed_at: None,
+                    sort_order: 0,
+                },
+                Task {
+                    id: "done-1".to_string(),
+                    text: "Done task 1".to_string(),
+                    done: true,
+                    created_at: "2026-03-04T13:00:00Z".to_string(),
+                    completed_at: Some("2026-03-04T15:00:00Z".to_string()),
+                    sort_order: 1,
+                },
+                Task {
+                    id: "done-2".to_string(),
+                    text: "Done task 2".to_string(),
+                    done: true,
+                    created_at: "2026-03-04T12:00:00Z".to_string(),
+                    completed_at: Some("2026-03-04T16:00:00Z".to_string()),
+                    sort_order: 2,
+                },
+            ],
+        };
+
+        let history: Vec<&Task> = tasks_file.tasks.iter().filter(|t| t.done).collect();
+        assert_eq!(history.len(), 2);
+        assert!(history.iter().all(|t| t.done));
+    }
+
+    #[test]
+    fn test_get_history_sorted_by_completed_at_desc() {
+        let tasks_file = TasksFile {
+            tasks: vec![
+                Task {
+                    id: "old".to_string(),
+                    text: "Old done".to_string(),
+                    done: true,
+                    created_at: "2026-03-04T12:00:00Z".to_string(),
+                    completed_at: Some("2026-03-04T14:00:00Z".to_string()),
+                    sort_order: 0,
+                },
+                Task {
+                    id: "recent".to_string(),
+                    text: "Recent done".to_string(),
+                    done: true,
+                    created_at: "2026-03-04T13:00:00Z".to_string(),
+                    completed_at: Some("2026-03-04T16:00:00Z".to_string()),
+                    sort_order: 1,
+                },
+                Task {
+                    id: "middle".to_string(),
+                    text: "Middle done".to_string(),
+                    done: true,
+                    created_at: "2026-03-04T11:00:00Z".to_string(),
+                    completed_at: Some("2026-03-04T15:00:00Z".to_string()),
+                    sort_order: 2,
+                },
+            ],
+        };
+
+        let mut history: Vec<Task> = tasks_file.tasks.iter().filter(|t| t.done).cloned().collect();
+        history.sort_by(|a, b| {
+            let a_time = a.completed_at.as_deref().unwrap_or("");
+            let b_time = b.completed_at.as_deref().unwrap_or("");
+            b_time.cmp(a_time)
+        });
+
+        assert_eq!(history[0].id, "recent");
+        assert_eq!(history[1].id, "middle");
+        assert_eq!(history[2].id, "old");
     }
 }

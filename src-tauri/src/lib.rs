@@ -53,6 +53,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             tasks::get_tasks,
+            tasks::get_history,
             tasks::create_task,
             tasks::toggle_task,
             tasks::update_task,

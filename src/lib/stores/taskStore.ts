@@ -5,6 +5,9 @@ import type { Task } from "../types";
 /** Reactive store for tasks — ONLY IPC access point for task data (ARCH-6) */
 export const tasks = writable<Task[]>([]);
 
+/** Reactive store for completed tasks history */
+export const history = writable<Task[]>([]);
+
 /** Load active tasks from backend */
 export async function loadTasks(): Promise<void> {
   const result = await invoke<Task[]>("get_tasks");
@@ -33,4 +36,10 @@ export async function updateTask(id: string, text: string): Promise<void> {
 export async function reorderTasks(taskIds: string[]): Promise<void> {
   await invoke("reorder_tasks", { taskIds });
   await loadTasks();
+}
+
+/** Load completed tasks history from backend */
+export async function loadHistory(): Promise<void> {
+  const result = await invoke<Task[]>("get_history");
+  history.set(result);
 }
