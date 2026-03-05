@@ -29,6 +29,12 @@ Go to the [Releases page](https://github.com/YvanBetremieux/tinyTodo/releases) a
 
 Open the downloaded file and follow the installer. The app auto-updates after that.
 
+> **macOS note:** The app is not code-signed yet. If macOS says the app is "damaged", run:
+> ```bash
+> xattr -cr /Applications/tinyTodo.app
+> ```
+> Then open the app again.
+
 ### Build from source
 
 **Prerequisites:** [Node.js](https://nodejs.org/) (LTS), [Rust](https://rustup.rs/), and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
