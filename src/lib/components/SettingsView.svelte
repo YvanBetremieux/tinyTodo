@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { enable, disable } from "@tauri-apps/plugin-autostart";
   import { config, loadConfig, saveConfig } from "../stores/configStore";
   import type { Config } from "../types";
 
@@ -71,6 +72,17 @@
     capturing = false;
     capturedKeys = "";
   }
+
+  async function toggleAutostart() {
+    const current = $config;
+    if (current.autostart) {
+      await disable();
+    } else {
+      await enable();
+    }
+    const newConfig: Config = { ...current, autostart: !current.autostart };
+    await saveConfig(newConfig);
+  }
 </script>
 
 <svelte:window onkeydown={handleCaptureKeydown} />
@@ -105,6 +117,22 @@
         <span class="setting-label">Mode</span>
         <button class="setting-button mode-toggle" onclick={toggleShortcutMode}>
           {$config.shortcut_mode === "toggle" ? "Toggle" : "Maintenu"}
+        </button>
+      </div>
+    </div>
+
+    <!-- Autostart Section -->
+    <div class="setting-section">
+      <h3 class="section-title">Système</h3>
+
+      <div class="setting-row">
+        <span class="setting-label">Lancer au démarrage</span>
+        <button
+          class="setting-button mode-toggle"
+          class:active={$config.autostart}
+          onclick={toggleAutostart}
+        >
+          {$config.autostart ? "Activé" : "Désactivé"}
         </button>
       </div>
     </div>
@@ -216,5 +244,11 @@
   .mode-toggle {
     min-width: 80px;
     text-align: center;
+  }
+
+  .mode-toggle.active {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
   }
 </style>
