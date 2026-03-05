@@ -1,5 +1,5 @@
 pub mod config;
-mod shortcuts;
+pub mod shortcuts;
 pub mod tasks;
 mod tray;
 pub mod window;
@@ -75,6 +75,7 @@ pub fn run() {
             tasks::reorder_tasks,
             config::get_config,
             config::save_config_command,
+            shortcuts::update_shortcut,
             window::hide_peek_command,
             window::set_persistent,
         ])
