@@ -1,0 +1,15 @@
+/* macOS-native theme — system-like dark palette */
+:root[data-theme="macos-native"] {
+  --color-bg: #1e1e1e;
+  --color-surface: #2a2a2a;
+  --color-surface-hover: #333333;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #ababab;
+  --color-text-muted: #6e6e6e;
+  --color-accent: #0a84ff;
+  --color-accent-hover: #0070e0;
+  --color-border: #3d3d3d;
+  --color-checkbox: #0a84ff;
+  --color-checkbox-checked: #0060c0;
+  --color-selection: rgba(10, 132, 255, 0.2);
+}

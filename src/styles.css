@@ -1,3 +1,11 @@
+/* Theme imports */
+@import './themes/ultra-minimal.css';
+@import './themes/floating-card.css';
+@import './themes/glass.css';
+@import './themes/macos-native.css';
+@import './themes/high-contrast.css';
+@import './themes/warm.css';
+
 /* tinyTodo — Global Styles & Design Tokens */
 
 :root {

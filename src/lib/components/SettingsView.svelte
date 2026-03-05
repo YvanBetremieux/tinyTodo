@@ -2,7 +2,8 @@
   import { invoke } from "@tauri-apps/api/core";
   import { enable, disable } from "@tauri-apps/plugin-autostart";
   import { config, loadConfig, saveConfig } from "../stores/configStore";
-  import type { Config } from "../types";
+  import { THEMES, applyTheme } from "../stores/themeStore";
+  import type { Config, Theme } from "../types";
 
   interface Props {
     onclose: () => void;
@@ -83,6 +84,12 @@
     const newConfig: Config = { ...current, autostart: !current.autostart };
     await saveConfig(newConfig);
   }
+
+  async function selectTheme(theme: Theme) {
+    applyTheme(theme);
+    const newConfig: Config = { ...$config, theme };
+    await saveConfig(newConfig);
+  }
 </script>
 
 <svelte:window onkeydown={handleCaptureKeydown} />
@@ -134,6 +141,23 @@
         >
           {$config.autostart ? "Activé" : "Désactivé"}
         </button>
+      </div>
+    </div>
+
+    <!-- Theme Section -->
+    <div class="setting-section">
+      <h3 class="section-title">Thème</h3>
+
+      <div class="theme-grid">
+        {#each THEMES as theme}
+          <button
+            class="theme-chip"
+            class:active={$config.theme === theme.id}
+            onclick={() => selectTheme(theme.id)}
+          >
+            {theme.label}
+          </button>
+        {/each}
       </div>
     </div>
   </div>
@@ -247,6 +271,34 @@
   }
 
   .mode-toggle.active {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+  }
+
+  .theme-chip {
+    background: var(--color-surface-hover);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm, 12px);
+    cursor: pointer;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius-sm);
+    text-align: center;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .theme-chip:hover {
+    border-color: var(--color-accent);
+  }
+
+  .theme-chip.active {
     background-color: var(--color-accent);
     border-color: var(--color-accent);
     color: #fff;

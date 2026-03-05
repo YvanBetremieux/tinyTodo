@@ -1,0 +1,15 @@
+/* Glass theme — glassmorphism with translucency */
+:root[data-theme="glass"] {
+  --color-bg: rgba(18, 18, 40, 0.85);
+  --color-surface: rgba(30, 30, 60, 0.6);
+  --color-surface-hover: rgba(40, 40, 80, 0.7);
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #c0c0e0;
+  --color-text-muted: #8080b0;
+  --color-accent: #8b8bff;
+  --color-accent-hover: #7a7aee;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-checkbox: #8b8bff;
+  --color-checkbox-checked: #6060bb;
+  --color-selection: rgba(139, 139, 255, 0.15);
+}

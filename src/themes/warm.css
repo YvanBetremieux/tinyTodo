@@ -1,0 +1,15 @@
+/* Warm theme — earthy tones */
+:root[data-theme="warm"] {
+  --color-bg: #1f1a16;
+  --color-surface: #2a2420;
+  --color-surface-hover: #352e28;
+  --color-text-primary: #f0e8e0;
+  --color-text-secondary: #c0b0a0;
+  --color-text-muted: #887868;
+  --color-accent: #e8a050;
+  --color-accent-hover: #d08a3a;
+  --color-border: #403830;
+  --color-checkbox: #e8a050;
+  --color-checkbox-checked: #a87030;
+  --color-selection: rgba(232, 160, 80, 0.18);
+}

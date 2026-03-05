@@ -1,0 +1,15 @@
+/* Floating-card theme — elevated card with soft shadows */
+:root[data-theme="floating-card"] {
+  --color-bg: #0d0d1a;
+  --color-surface: #1e1e32;
+  --color-surface-hover: #282848;
+  --color-text-primary: #f0f0f5;
+  --color-text-secondary: #b0b0c8;
+  --color-text-muted: #7070a0;
+  --color-accent: #6c63ff;
+  --color-accent-hover: #5a52e0;
+  --color-border: #3a3a5c;
+  --color-checkbox: #6c63ff;
+  --color-checkbox-checked: #4a449e;
+  --color-selection: rgba(108, 99, 255, 0.18);
+}

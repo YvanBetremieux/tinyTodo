@@ -5,14 +5,18 @@
   import PeekWindow from "./lib/components/PeekWindow.svelte";
   import SettingsView from "./lib/components/SettingsView.svelte";
   import { loadTasks } from "./lib/stores/taskStore";
-  import { loadConfig } from "./lib/stores/configStore";
+  import { config, loadConfig } from "./lib/stores/configStore";
+  import { applyTheme } from "./lib/stores/themeStore";
 
   let visible = $state(false);
   let settingsMode = $state(false);
 
   onMount(() => {
-    // Load config on startup
-    loadConfig();
+    // Load config on startup, then apply saved theme
+    loadConfig().then(() => {
+      const unsub = config.subscribe((c) => applyTheme(c.theme));
+      unsub();
+    });
 
     const unlistenShow = listen("show-peek", () => {
       visible = true;
