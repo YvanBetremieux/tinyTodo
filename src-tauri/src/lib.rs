@@ -54,6 +54,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             tasks::get_tasks,
             tasks::create_task,
+            tasks::toggle_task,
             window::hide_peek_command,
             window::set_persistent,
         ])

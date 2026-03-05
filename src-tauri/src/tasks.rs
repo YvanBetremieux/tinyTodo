@@ -115,6 +115,30 @@ pub fn create_task(text: String, state: tauri::State<'_, TaskState>) -> Result<T
     Ok(new_task)
 }
 
+/// IPC command: toggle a task's done status
+#[tauri::command]
+pub fn toggle_task(id: String, state: tauri::State<'_, TaskState>) -> Result<Task, String> {
+    let mut tasks_file = state.tasks.lock().unwrap();
+
+    let task = tasks_file
+        .tasks
+        .iter_mut()
+        .find(|t| t.id == id)
+        .ok_or_else(|| format!("Task not found: {}", id))?;
+
+    task.done = !task.done;
+    if task.done {
+        task.completed_at = Some(chrono::Utc::now().to_rfc3339());
+    } else {
+        task.completed_at = None;
+    }
+
+    let result = task.clone();
+    save_tasks(&state.data_path, &tasks_file)?;
+
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -416,5 +440,128 @@ mod tests {
         // RFC3339 is a profile of ISO 8601
         assert!(now.contains('T'));
         assert!(now.contains('+') || now.contains('Z'));
+    }
+
+    #[test]
+    fn test_toggle_task_sets_done_and_completed_at() {
+        let dir = TempDir::new().unwrap();
+        let path = test_path(&dir);
+        let tasks_file = TasksFile {
+            tasks: vec![Task {
+                id: "task-1".to_string(),
+                text: "Test task".to_string(),
+                done: false,
+                created_at: "2026-03-04T14:00:00Z".to_string(),
+                completed_at: None,
+                sort_order: 0,
+            }],
+        };
+        save_tasks(&path, &tasks_file).unwrap();
+
+        let state = TaskState {
+            tasks: Mutex::new(tasks_file),
+            data_path: path.clone(),
+        };
+
+        // Simulate toggle
+        {
+            let mut tf = state.tasks.lock().unwrap();
+            let task = tf.tasks.iter_mut().find(|t| t.id == "task-1").unwrap();
+            task.done = true;
+            task.completed_at = Some(chrono::Utc::now().to_rfc3339());
+            save_tasks(&state.data_path, &tf).unwrap();
+        }
+
+        let tf = state.tasks.lock().unwrap();
+        let task = tf.tasks.iter().find(|t| t.id == "task-1").unwrap();
+        assert!(task.done);
+        assert!(task.completed_at.is_some());
+
+        // Verify persisted
+        let loaded = load_tasks(&path);
+        let loaded_task = loaded.tasks.iter().find(|t| t.id == "task-1").unwrap();
+        assert!(loaded_task.done);
+        assert!(loaded_task.completed_at.is_some());
+    }
+
+    #[test]
+    fn test_toggle_task_not_found() {
+        let tasks_file = TasksFile {
+            tasks: vec![Task {
+                id: "task-1".to_string(),
+                text: "Test".to_string(),
+                done: false,
+                created_at: "2026-03-04T14:00:00Z".to_string(),
+                completed_at: None,
+                sort_order: 0,
+            }],
+        };
+
+        let result = tasks_file.tasks.iter().find(|t| t.id == "nonexistent");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_toggle_task_filters_from_active() {
+        let tasks_file = TasksFile {
+            tasks: vec![
+                Task {
+                    id: "task-1".to_string(),
+                    text: "Active".to_string(),
+                    done: false,
+                    created_at: "2026-03-04T14:00:00Z".to_string(),
+                    completed_at: None,
+                    sort_order: 0,
+                },
+                Task {
+                    id: "task-2".to_string(),
+                    text: "Toggled".to_string(),
+                    done: true,
+                    created_at: "2026-03-04T13:00:00Z".to_string(),
+                    completed_at: Some("2026-03-04T15:00:00Z".to_string()),
+                    sort_order: 1,
+                },
+            ],
+        };
+
+        let active: Vec<&Task> = tasks_file.tasks.iter().filter(|t| !t.done).collect();
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].id, "task-1");
+    }
+
+    #[test]
+    fn test_toggle_back_to_undone() {
+        let dir = TempDir::new().unwrap();
+        let path = test_path(&dir);
+        let tasks_file = TasksFile {
+            tasks: vec![Task {
+                id: "task-1".to_string(),
+                text: "Done task".to_string(),
+                done: true,
+                created_at: "2026-03-04T14:00:00Z".to_string(),
+                completed_at: Some("2026-03-04T15:00:00Z".to_string()),
+                sort_order: 0,
+            }],
+        };
+        save_tasks(&path, &tasks_file).unwrap();
+
+        let state = TaskState {
+            tasks: Mutex::new(tasks_file),
+            data_path: path.clone(),
+        };
+
+        // Toggle back to undone
+        {
+            let mut tf = state.tasks.lock().unwrap();
+            let task = tf.tasks.iter_mut().find(|t| t.id == "task-1").unwrap();
+            task.done = false;
+            task.completed_at = None;
+            save_tasks(&state.data_path, &tf).unwrap();
+        }
+
+        let tf = state.tasks.lock().unwrap();
+        let task = tf.tasks.iter().find(|t| t.id == "task-1").unwrap();
+        assert!(!task.done);
+        assert!(task.completed_at.is_none());
     }
 }

@@ -16,3 +16,9 @@ export async function createTask(text: string): Promise<void> {
   await invoke<Task>("create_task", { text });
   await loadTasks();
 }
+
+/** Toggle a task's done status and reload the list */
+export async function toggleTask(id: string): Promise<void> {
+  await invoke<Task>("toggle_task", { id });
+  await loadTasks();
+}
