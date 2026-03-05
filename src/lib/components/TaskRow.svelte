@@ -6,9 +6,25 @@
   interface Props {
     task: Task;
     selected?: boolean;
+    dragging?: boolean;
+    dragOver?: boolean;
+    ondragstart?: () => void;
+    ondragover?: () => void;
+    ondrop?: () => void;
+    ondragend?: () => void;
   }
 
-  let { task, selected = false }: Props = $props();
+  let {
+    task,
+    selected = false,
+    dragging = false,
+    dragOver = false,
+    ondragstart,
+    ondragover,
+    ondrop,
+    ondragend,
+  }: Props = $props();
+
   let fadingOut = $state(false);
   let editing = $state(false);
   let editText = $state("");
@@ -57,6 +73,25 @@
     }
   }
 
+  function handleDragStart(e: DragEvent) {
+    if (editing) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer?.setData("text/plain", task.id);
+    ondragstart?.();
+  }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    ondragover?.();
+  }
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault();
+    ondrop?.();
+  }
+
   $effect(() => {
     if (editing && editInputEl) {
       editInputEl.focus();
@@ -77,6 +112,13 @@
   class="task-row"
   class:fade-out={fadingOut}
   class:selected
+  class:dragging
+  class:drag-over={dragOver}
+  draggable={!editing ? "true" : "false"}
+  ondragstart={handleDragStart}
+  ondragover={handleDragOver}
+  ondrop={handleDrop}
+  ondragend={() => ondragend?.()}
 >
   <input
     type="checkbox"
@@ -106,6 +148,7 @@
     padding: var(--space-sm) var(--space-md);
     border-bottom: 1px solid var(--color-border);
     transition: background-color var(--transition-fast), opacity 250ms ease-out;
+    cursor: grab;
   }
 
   .task-row:hover {
@@ -120,6 +163,14 @@
 
   .task-row.fade-out {
     opacity: 0;
+  }
+
+  .task-row.dragging {
+    opacity: 0.4;
+  }
+
+  .task-row.drag-over {
+    border-top: 2px solid var(--color-accent);
   }
 
   .task-checkbox {

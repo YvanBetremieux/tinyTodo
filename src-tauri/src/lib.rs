@@ -56,6 +56,7 @@ pub fn run() {
             tasks::create_task,
             tasks::toggle_task,
             tasks::update_task,
+            tasks::reorder_tasks,
             window::hide_peek_command,
             window::set_persistent,
         ])

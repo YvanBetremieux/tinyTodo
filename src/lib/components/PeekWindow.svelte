@@ -1,12 +1,14 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { tasks } from "../stores/taskStore";
-  import { toggleTask } from "../stores/taskStore";
+  import { toggleTask, reorderTasks } from "../stores/taskStore";
   import TaskRow from "./TaskRow.svelte";
   import TaskInput from "./TaskInput.svelte";
 
   let inputMode = $state(false);
   let selectedIndex = $state(-1);
+  let dragFromIndex = $state(-1);
+  let dragOverIndex = $state(-1);
 
   function activateInputMode() {
     inputMode = true;
@@ -20,17 +22,14 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    // Don't handle navigation when input is focused (input mode or editing)
     const isInputFocused = document.activeElement?.tagName === "INPUT";
 
-    // Space activates input mode (only when no input is focused)
     if (e.key === " " && !inputMode && !isInputFocused) {
       e.preventDefault();
       activateInputMode();
       return;
     }
 
-    // Arrow/Enter navigation only when no input is focused
     if (isInputFocused || inputMode) return;
 
     const taskCount = $tasks.length;
@@ -50,14 +49,40 @@
       e.preventDefault();
       const task = $tasks[selectedIndex];
       toggleTask(task.id);
-      // Adjust index if we're at the end
       if (selectedIndex >= taskCount - 1) {
         selectedIndex = Math.max(-1, taskCount - 2);
       }
     }
   }
 
-  // Reset selection when tasks change (e.g., after toggle)
+  function handleDragStart(index: number) {
+    dragFromIndex = index;
+    selectedIndex = -1;
+  }
+
+  function handleDragOver(index: number) {
+    dragOverIndex = index;
+  }
+
+  async function handleDrop(toIndex: number) {
+    if (dragFromIndex >= 0 && dragFromIndex !== toIndex) {
+      // Build new order by moving the dragged item
+      const currentTasks = [...$tasks];
+      const [moved] = currentTasks.splice(dragFromIndex, 1);
+      currentTasks.splice(toIndex, 0, moved);
+      const newOrder = currentTasks.map(t => t.id);
+      await reorderTasks(newOrder);
+    }
+    dragFromIndex = -1;
+    dragOverIndex = -1;
+  }
+
+  function handleDragEnd() {
+    dragFromIndex = -1;
+    dragOverIndex = -1;
+  }
+
+  // Reset selection when tasks change
   $effect(() => {
     const taskCount = $tasks.length;
     if (selectedIndex >= taskCount) {
@@ -82,7 +107,16 @@
   {:else}
     <ul class="task-list">
       {#each $tasks as task, i (task.id)}
-        <TaskRow {task} selected={i === selectedIndex} />
+        <TaskRow
+          {task}
+          selected={i === selectedIndex}
+          dragging={i === dragFromIndex}
+          dragOver={i === dragOverIndex && i !== dragFromIndex}
+          ondragstart={() => handleDragStart(i)}
+          ondragover={() => handleDragOver(i)}
+          ondrop={() => handleDrop(i)}
+          ondragend={handleDragEnd}
+        />
       {/each}
     </ul>
   {/if}

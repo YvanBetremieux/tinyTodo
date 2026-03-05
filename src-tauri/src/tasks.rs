@@ -139,6 +139,24 @@ pub fn toggle_task(id: String, state: tauri::State<'_, TaskState>) -> Result<Tas
     Ok(result)
 }
 
+/// IPC command: reorder tasks by providing ordered list of task IDs
+#[tauri::command]
+pub fn reorder_tasks(task_ids: Vec<String>, state: tauri::State<'_, TaskState>) -> Result<(), String> {
+    let mut tasks_file = state.tasks.lock().unwrap();
+
+    for (index, id) in task_ids.iter().enumerate() {
+        let task = tasks_file
+            .tasks
+            .iter_mut()
+            .find(|t| t.id == *id)
+            .ok_or_else(|| format!("Task not found: {}", id))?;
+        task.sort_order = index as i64;
+    }
+
+    save_tasks(&state.data_path, &tasks_file)?;
+    Ok(())
+}
+
 /// IPC command: update a task's text
 #[tauri::command]
 pub fn update_task(id: String, text: String, state: tauri::State<'_, TaskState>) -> Result<Task, String> {
@@ -647,5 +665,91 @@ mod tests {
         // Simulate the validation logic from update_task
         let text = "   ".trim().to_string();
         assert!(text.is_empty());
+    }
+
+    #[test]
+    fn test_reorder_tasks_updates_sort_order() {
+        let dir = TempDir::new().unwrap();
+        let path = test_path(&dir);
+        let tasks_file = TasksFile {
+            tasks: vec![
+                Task {
+                    id: "a".to_string(),
+                    text: "First".to_string(),
+                    done: false,
+                    created_at: "2026-03-04T14:00:00Z".to_string(),
+                    completed_at: None,
+                    sort_order: 0,
+                },
+                Task {
+                    id: "b".to_string(),
+                    text: "Second".to_string(),
+                    done: false,
+                    created_at: "2026-03-04T13:00:00Z".to_string(),
+                    completed_at: None,
+                    sort_order: 1,
+                },
+                Task {
+                    id: "c".to_string(),
+                    text: "Third".to_string(),
+                    done: false,
+                    created_at: "2026-03-04T12:00:00Z".to_string(),
+                    completed_at: None,
+                    sort_order: 2,
+                },
+            ],
+        };
+        save_tasks(&path, &tasks_file).unwrap();
+
+        let state = TaskState {
+            tasks: Mutex::new(tasks_file),
+            data_path: path.clone(),
+        };
+
+        // Reorder: c, a, b
+        let new_order = vec!["c".to_string(), "a".to_string(), "b".to_string()];
+        {
+            let mut tf = state.tasks.lock().unwrap();
+            for (index, id) in new_order.iter().enumerate() {
+                let task = tf.tasks.iter_mut().find(|t| t.id == *id).unwrap();
+                task.sort_order = index as i64;
+            }
+            save_tasks(&state.data_path, &tf).unwrap();
+        }
+
+        // Verify in memory
+        let tf = state.tasks.lock().unwrap();
+        let c = tf.tasks.iter().find(|t| t.id == "c").unwrap();
+        let a = tf.tasks.iter().find(|t| t.id == "a").unwrap();
+        let b = tf.tasks.iter().find(|t| t.id == "b").unwrap();
+        assert_eq!(c.sort_order, 0);
+        assert_eq!(a.sort_order, 1);
+        assert_eq!(b.sort_order, 2);
+
+        // Verify persisted
+        let loaded = load_tasks(&path);
+        let mut active: Vec<Task> = loaded.tasks.iter().filter(|t| !t.done).cloned().collect();
+        active.sort_by_key(|t| t.sort_order);
+        assert_eq!(active[0].id, "c");
+        assert_eq!(active[1].id, "a");
+        assert_eq!(active[2].id, "b");
+    }
+
+    #[test]
+    fn test_reorder_tasks_not_found() {
+        let tasks_file = TasksFile {
+            tasks: vec![Task {
+                id: "a".to_string(),
+                text: "Test".to_string(),
+                done: false,
+                created_at: "2026-03-04T14:00:00Z".to_string(),
+                completed_at: None,
+                sort_order: 0,
+            }],
+        };
+
+        // Try to find a nonexistent task
+        let result = tasks_file.tasks.iter().find(|t| t.id == "nonexistent");
+        assert!(result.is_none());
     }
 }

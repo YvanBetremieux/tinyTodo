@@ -28,3 +28,9 @@ export async function updateTask(id: string, text: string): Promise<void> {
   await invoke<Task>("update_task", { id, text });
   await loadTasks();
 }
+
+/** Reorder tasks by providing the new order of task IDs */
+export async function reorderTasks(taskIds: string[]): Promise<void> {
+  await invoke("reorder_tasks", { taskIds });
+  await loadTasks();
+}
