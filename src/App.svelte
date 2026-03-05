@@ -7,6 +7,7 @@
   import { loadTasks } from "./lib/stores/taskStore";
   import { config, loadConfig } from "./lib/stores/configStore";
   import { applyTheme } from "./lib/stores/themeStore";
+  import { checkForUpdates } from "./lib/stores/updaterStore";
 
   let visible = $state(false);
   let settingsMode = $state(false);
@@ -17,6 +18,9 @@
       const unsub = config.subscribe((c) => applyTheme(c.theme));
       unsub();
     });
+
+    // Check for updates silently on startup
+    checkForUpdates();
 
     const unlistenShow = listen("show-peek", () => {
       visible = true;

@@ -36,6 +36,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4ODcxMjM0OEU4Qzc0MzEKUldReGRJeU9OQktIK0hBRUFYQkM2OEdwUnNzU3pNaXNYVWw1Tmt2MHpiUHcrRkh2bkZLMjkzWW8K",
+      "endpoints": [
+        "https://github.com/YvanBetremieux/tinyTodo/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
