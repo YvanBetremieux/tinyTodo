@@ -1,4 +1,4 @@
-mod config;
+pub mod config;
 mod shortcuts;
 pub mod tasks;
 mod tray;
@@ -6,6 +6,7 @@ pub mod window;
 
 use std::sync::Mutex;
 use tauri::Manager;
+use config::{load_config, ConfigState};
 use tasks::{load_tasks, TaskState};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -21,21 +22,35 @@ pub fn run() {
                 )?;
             }
 
-            // Initialize task persistence
+            // Initialize data directory
             let data_dir = app
                 .path()
                 .app_data_dir()
                 .expect("Failed to get app data directory");
+
+            // Initialize task persistence
             let tasks_path = data_dir.join("tasks.json");
             let tasks_file = load_tasks(&tasks_path);
-
             app.manage(TaskState {
                 tasks: Mutex::new(tasks_file),
                 data_path: tasks_path,
             });
 
+            // Initialize config persistence
+            let config_path = data_dir.join("config.json");
+            let config = load_config(&config_path);
+            app.manage(ConfigState {
+                config: Mutex::new(config),
+                config_path,
+            });
+
             // Register global shortcut
             shortcuts::register_shortcut(app.handle());
+
+            // Set up system tray
+            if let Err(e) = tray::setup_tray(app.handle()) {
+                log::error!("Failed to setup tray: {}", e);
+            }
 
             // Handle window blur (click outside) — hide peek
             let app_handle = app.handle().clone();
@@ -58,6 +73,8 @@ pub fn run() {
             tasks::toggle_task,
             tasks::update_task,
             tasks::reorder_tasks,
+            config::get_config,
+            config::save_config_command,
             window::hide_peek_command,
             window::set_persistent,
         ])
