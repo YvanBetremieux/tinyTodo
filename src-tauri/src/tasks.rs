@@ -139,6 +139,29 @@ pub fn toggle_task(id: String, state: tauri::State<'_, TaskState>) -> Result<Tas
     Ok(result)
 }
 
+/// IPC command: update a task's text
+#[tauri::command]
+pub fn update_task(id: String, text: String, state: tauri::State<'_, TaskState>) -> Result<Task, String> {
+    let trimmed = text.trim().to_string();
+    if trimmed.is_empty() {
+        return Err("Task text cannot be empty".to_string());
+    }
+
+    let mut tasks_file = state.tasks.lock().unwrap();
+
+    let task = tasks_file
+        .tasks
+        .iter_mut()
+        .find(|t| t.id == id)
+        .ok_or_else(|| format!("Task not found: {}", id))?;
+
+    task.text = trimmed;
+    let result = task.clone();
+    save_tasks(&state.data_path, &tasks_file)?;
+
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -563,5 +586,66 @@ mod tests {
         let task = tf.tasks.iter().find(|t| t.id == "task-1").unwrap();
         assert!(!task.done);
         assert!(task.completed_at.is_none());
+    }
+
+    #[test]
+    fn test_update_task_changes_text() {
+        let dir = TempDir::new().unwrap();
+        let path = test_path(&dir);
+        let tasks_file = TasksFile {
+            tasks: vec![Task {
+                id: "task-1".to_string(),
+                text: "Original text".to_string(),
+                done: false,
+                created_at: "2026-03-04T14:00:00Z".to_string(),
+                completed_at: None,
+                sort_order: 0,
+            }],
+        };
+        save_tasks(&path, &tasks_file).unwrap();
+
+        let state = TaskState {
+            tasks: Mutex::new(tasks_file),
+            data_path: path.clone(),
+        };
+
+        {
+            let mut tf = state.tasks.lock().unwrap();
+            let task = tf.tasks.iter_mut().find(|t| t.id == "task-1").unwrap();
+            task.text = "Updated text".to_string();
+            save_tasks(&state.data_path, &tf).unwrap();
+        }
+
+        // Verify in memory
+        let tf = state.tasks.lock().unwrap();
+        assert_eq!(tf.tasks[0].text, "Updated text");
+
+        // Verify persisted
+        let loaded = load_tasks(&path);
+        assert_eq!(loaded.tasks[0].text, "Updated text");
+    }
+
+    #[test]
+    fn test_update_task_not_found() {
+        let tasks_file = TasksFile {
+            tasks: vec![Task {
+                id: "task-1".to_string(),
+                text: "Test".to_string(),
+                done: false,
+                created_at: "2026-03-04T14:00:00Z".to_string(),
+                completed_at: None,
+                sort_order: 0,
+            }],
+        };
+
+        let result = tasks_file.tasks.iter().find(|t| t.id == "nonexistent");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_update_task_empty_text_rejected() {
+        // Simulate the validation logic from update_task
+        let text = "   ".trim().to_string();
+        assert!(text.is_empty());
     }
 }

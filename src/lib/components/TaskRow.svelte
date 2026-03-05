@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { invoke } from "@tauri-apps/api/core";
   import type { Task } from "../types";
-  import { toggleTask } from "../stores/taskStore";
+  import { toggleTask, updateTask } from "../stores/taskStore";
 
   interface Props {
     task: Task;
@@ -8,14 +9,58 @@
 
   let { task }: Props = $props();
   let fadingOut = $state(false);
+  let editing = $state(false);
+  let editText = $state("");
+  let editInputEl: HTMLInputElement | undefined = $state();
 
   async function handleToggle() {
     fadingOut = true;
-    // Wait for fade-out animation (~250ms) before actually toggling
     setTimeout(async () => {
       await toggleTask(task.id);
     }, 250);
   }
+
+  function startEditing() {
+    editing = true;
+    editText = task.text;
+    invoke("set_persistent", { persistent: true });
+  }
+
+  async function saveEdit() {
+    const trimmed = editText.trim();
+    if (trimmed && trimmed !== task.text) {
+      await updateTask(task.id, trimmed);
+    }
+    stopEditing();
+  }
+
+  function cancelEdit() {
+    stopEditing();
+  }
+
+  function stopEditing() {
+    editing = false;
+    editText = "";
+    invoke("set_persistent", { persistent: false });
+  }
+
+  function handleEditKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveEdit();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelEdit();
+    }
+  }
+
+  $effect(() => {
+    if (editing && editInputEl) {
+      editInputEl.focus();
+      editInputEl.select();
+    }
+  });
 </script>
 
 <li class="task-row" class:fade-out={fadingOut}>
@@ -25,7 +70,18 @@
     checked={task.done}
     onchange={handleToggle}
   />
-  <span class="task-text">{task.text}</span>
+  {#if editing}
+    <input
+      bind:this={editInputEl}
+      bind:value={editText}
+      onkeydown={handleEditKeydown}
+      onblur={saveEdit}
+      type="text"
+      class="edit-field"
+    />
+  {:else}
+    <span class="task-text" ondblclick={startEditing}>{task.text}</span>
+  {/if}
 </li>
 
 <style>
@@ -72,5 +128,20 @@
     font-size: var(--font-size-base);
     line-height: 1.4;
     word-break: break-word;
+    cursor: text;
+    flex: 1;
+  }
+
+  .edit-field {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--color-accent);
+    outline: none;
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    padding: 0;
+    line-height: 1.4;
   }
 </style>

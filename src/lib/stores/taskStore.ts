@@ -22,3 +22,9 @@ export async function toggleTask(id: string): Promise<void> {
   await invoke<Task>("toggle_task", { id });
   await loadTasks();
 }
+
+/** Update a task's text and reload the list */
+export async function updateTask(id: string, text: string): Promise<void> {
+  await invoke<Task>("update_task", { id, text });
+  await loadTasks();
+}
